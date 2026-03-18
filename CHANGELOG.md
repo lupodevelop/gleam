@@ -4,11 +4,18 @@
 
 ### Compiler
 
-- Public type aliases no longer trigger the "internal type" warning when
-  returned from a public function; only the alias itself is checked for
-  visibility. ([Daniele Scaratti](https://github.com/lupodevelop))
+- The compiler now emits a warning when an `@internal` type appears in the
+  public API of a module (e.g. as the return type or argument of a public
+  function). Public type aliases are checked for their own visibility only and
+  do not trigger the warning based on their aliased type.
+  ([Daniele Scaratti](https://github.com/lupodevelop))
 
 ### Build tool
+
+- `gleam publish` now refuses to publish a package if any of its modules expose
+  `@internal` types in their public API. Remove the `@internal` annotation or
+  update the affected signatures before publishing.
+  ([Daniele Scaratti](https://github.com/lupodevelop))
 
 ### Language server
 
