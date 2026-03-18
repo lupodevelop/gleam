@@ -441,6 +441,12 @@ impl Printer<'_> {
 
     fn type_(&mut self, type_: &Type, print_mode: PrintMode) -> Document<'static> {
         match type_ {
+            Type::Alias { aliased, parameters: _parameters, .. } => {
+                // For documentation purposes we simply render the aliased
+                // type.
+                self.type_(aliased, print_mode)
+            }
+
             Type::Named {
                 package,
                 module,
@@ -672,6 +678,9 @@ impl Printer<'_> {
     ///
     fn register_local_type_variable_names(&mut self, type_: &Type) {
         match type_ {
+            Type::Alias { aliased, .. } => {
+                self.register_local_type_variable_names(aliased);
+            }
             Type::Named { arguments, .. } => {
                 for argument in arguments {
                     self.register_local_type_variable_names(argument);

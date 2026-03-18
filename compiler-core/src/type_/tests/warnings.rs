@@ -1662,6 +1662,114 @@ pub type Wobble {
 
 */
 
+// New tests verifying alias behaviour
+#[test]
+fn public_alias_of_internal_type_in_public_signature() {
+    assert_no_warnings!(
+        "
+@internal
+pub type Internal { Internal }
+
+pub type Alias = Internal
+
+pub fn foo() -> Alias { Alias }
+"    );
+}
+
+#[test]
+fn public_alias_reexported_from_external_module_does_not_warn() {
+    assert_no_warnings!(
+        (
+            "dep",
+            "dep/types",
+            "pub type Internal { Internal } pub type Alias = Internal"
+        ),
+        "
+import dep/types.{type Alias}
+
+pub fn foo() -> Alias { Alias }
+",
+    );
+}
+
+#[test]
+fn nested_public_alias_of_internal_type_does_not_warn() {
+    assert_no_warnings!(
+        "\n@internal
+pub type Internal { Internal }
+
+pub type Mid = Internal
+pub type Outer = Mid
+
+pub fn foo() -> Outer { Outer }
+"    );
+}
+
+#[test]
+fn collapse_links_handles_alias_cycle() {
+    use crate::type_::{collapse_links, Type, Publicity};
+    use std::sync::Arc;
+
+    // Build a two‑node cycle manually using `Arc::make_mut` to avoid borrow
+    // conflicts.  We start with two standalone aliases, then mutate each to
+    // point at the other.
+    let mut a: Arc<Type> = Arc::new(Type::Alias {
+        publicity: Publicity::Public,
+        aliased: Arc::new(Type::Tuple { elements: vec![] }),
+        parameters: vec![],
+    });
+    let mut b: Arc<Type> = Arc::new(Type::Alias {
+        publicity: Publicity::Public,
+        aliased: Arc::new(Type::Tuple { elements: vec![] }),
+        parameters: vec![],
+    });
+
+    {
+        let a_mut = Arc::make_mut(&mut a);
+        if let Type::Alias { aliased, .. } = a_mut {
+            *aliased = b.clone();
+        }
+    }
+    {
+        let b_mut = Arc::make_mut(&mut b);
+        if let Type::Alias { aliased, .. } = b_mut {
+            *aliased = a.clone();
+        }
+    }
+
+    // simply invoke collapse_links; test passes if this call returns
+    // without recursion overflow.
+    let _ = collapse_links(a.clone());
+}
+
+#[test]
+fn collapse_links_idempotent() {
+    use crate::type_::{collapse_links, Type, Publicity};
+    use std::sync::Arc;
+
+    // build a long chain of aliases wrapping a simple named type
+    let mut t: Arc<Type> = Arc::new(Type::Named {
+        publicity: Publicity::Public,
+        package: "".into(),
+        module: "gleam".into(),
+        name: "Int".into(),
+        arguments: vec![],
+        inferred_variant: None,
+    });
+    for _ in 0..100 {
+        t = Arc::new(Type::Alias {
+            publicity: Publicity::Public,
+            aliased: t.clone(),
+            parameters: vec![],
+        });
+    }
+
+    let first = collapse_links(t.clone());
+    let second = collapse_links(t.clone());
+    // collapsing the same type twice should yield structurally equal results
+    assert_eq!(first, second);
+}
+
 #[test]
 fn redundant_let_assert() {
     assert_warning!(

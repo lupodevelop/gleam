@@ -846,7 +846,16 @@ impl BranchMode {
 
 impl Variable {
     fn branch_mode(&self, env: &Environment<'_>) -> BranchMode {
-        match collapse_links(self.type_.clone()).as_ref() {
+        // collapse_links removes type variable links and aliases so we
+        // can operate on the real underlying type.  However, collapse_links
+        // is not statically guaranteed to return a non-alias, so we handle
+        // the alias case explicitly before the main match.
+        let mut t = collapse_links(self.type_.clone());
+        if let Type::Alias { aliased, .. } = t.as_ref() {
+            t = aliased.clone();
+        }
+        match t.as_ref() {
+            Type::Alias { .. } => unreachable!("collapse_links should have removed aliases"),
             Type::Fn { .. } | Type::Var { .. } => BranchMode::Infinite,
             Type::Named { module, name, .. }
                 if is_prelude_module(module)
@@ -3185,6 +3194,15 @@ impl ConstructorSpecialiser {
 
     fn specialise_type(&self, type_: &Type) -> Arc<Type> {
         Arc::new(match type_ {
+            Type::Alias { publicity, aliased, parameters } => Type::Alias {
+                publicity: *publicity,
+                aliased: self.specialise_type(aliased.as_ref()),
+                parameters: parameters
+                    .iter()
+                    .map(|argument| self.specialise_type(argument))
+                    .collect(),
+            },
+
             Type::Named {
                 publicity,
                 package,

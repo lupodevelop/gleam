@@ -1549,7 +1549,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                 location: tuple.location(),
             }),
 
-            Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } => Err(Error::NotATuple {
+            Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } | Type::Alias { .. } => Err(Error::NotATuple {
                 location: tuple.location(),
                 given: tuple.type_(),
             }),
@@ -2536,7 +2536,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                         location: tuple.location(),
                     }),
 
-                    Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } => {
+                    Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } | Type::Alias { .. } => {
                         Err(Error::NotATuple {
                             location: tuple.location(),
                             given: tuple.type_(),
@@ -2944,7 +2944,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                 }),
 
             // Non-named types do not have fields
-            Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } => {
+            Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
                 return Err(unknown_field(vec![]));
             }
         }
@@ -3269,7 +3269,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                                 ))
                             }),
 
-                        Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } => {
+                        Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
                             panic!("Type has already checked to be valid")
                         }
                     }
@@ -3349,7 +3349,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
         // The record constructor needs to be a function.
         let (arguments_types, return_type) = match constructor.type_().as_ref() {
             Type::Fn { arguments, return_ } => (arguments.clone(), return_.clone()),
-            Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } => {
+            Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
                 return Err(Error::RecordUpdateInvalidConstructor {
                     location: constructor.location(),
                 });
@@ -3386,7 +3386,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
         // instantiate a new copy of the generic return type for our value constructor.
         let return_type_copy = match value_constructor.type_.as_ref() {
             Type::Fn { return_, .. } => self.instantiate(return_.clone(), &mut hashmap![]),
-            Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } => {
+            Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
                 return Err(Error::RecordUpdateInvalidConstructor {
                     location: constructor.location(),
                 });
@@ -3837,7 +3837,7 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                 // Extract field types and return type from the instantiated constructor
                 let (field_types, expected_type) = match instantiated_constructor_type.as_ref() {
                     Type::Fn { arguments, return_ } => (arguments.clone(), return_.clone()),
-                    Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } => {
+                    Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
                         self.problems.error(Error::RecordUpdateInvalidConstructor {
                             location: constructor_location,
                         });

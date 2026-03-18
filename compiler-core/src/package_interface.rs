@@ -10,7 +10,7 @@ use crate::{
     io::ordered_map,
     type_::{
         self, Deprecation, Opaque, Type, TypeConstructor, TypeVar, TypeVariantConstructors,
-        ValueConstructorVariant, expression::Implementations,
+        ValueConstructorVariant, expression::Implementations, collapse_links,
     },
 };
 
@@ -469,7 +469,10 @@ impl ModuleInterface {
             .iter()
             .filter(|(_, v)| v.publicity.is_public())
         {
-            match (value.type_.as_ref(), value.variant.clone()) {
+            // collapse aliases so we correctly recognise functions whose
+            // declared type is a type alias (e.g. `pub type F = fn(a) -> b`).
+            let t = collapse_links(value.type_.clone());
+            match (t.as_ref(), value.variant.clone()) {
                 (
                     Type::Fn {
                         arguments,
@@ -559,6 +562,7 @@ impl TypeInterface {
 /// have the same id will also have the same incremental number in the end).
 fn from_type_helper(type_: &Type, id_map: &mut IdMap) -> TypeInterface {
     match type_ {
+        Type::Alias { aliased, .. } => from_type_helper(aliased.as_ref(), id_map),
         Type::Fn { arguments, return_ } => TypeInterface::Fn {
             parameters: arguments
                 .iter()
@@ -659,6 +663,7 @@ impl IdMap {
     /// be assigned to a new incremental number.
     fn add_type_variable_id(&mut self, type_: &Type) {
         match type_ {
+            Type::Alias { aliased, .. } => self.add_type_variable_id(aliased.as_ref()),
             // These types have no id to add to the map.
             Type::Named { .. } | Type::Fn { .. } | Type::Tuple { .. } => (),
             // If the type is actually a type variable whose id needs to be mapped.

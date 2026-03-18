@@ -1786,6 +1786,11 @@ fn analyse_type_alias(t: UntypedTypeAlias, environment: &mut Environment<'_>) ->
         Err(_) => environment.new_generic_var(),
     };
 
+    // The analysed type for a type alias is simply the underlying type.  We
+    // do not wrap it in an `Alias` variant here; the alias semantics are
+    // observed when the alias is used elsewhere.
+    let type_ = type_;
+
     TypeAlias {
         documentation: doc,
         location,

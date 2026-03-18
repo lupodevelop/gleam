@@ -1003,6 +1003,10 @@ impl<'a, IO> Completer<'a, IO> {
     ) -> Option<&'a HashMap<EcoString, RecordAccessor>> {
         let type_ = collapse_links(type_);
         match type_.as_ref() {
+            Type::Alias { aliased, .. } => {
+                // delegate to underlying type
+                return self.type_accessors_from_modules(importable_modules, aliased.clone());
+            }
             Type::Named {
                 name,
                 module,
@@ -1021,11 +1025,15 @@ impl<'a, IO> Completer<'a, IO> {
     /// Provides completions for field accessors when the context being editted
     /// is a custom type instance
     pub fn completion_field_accessors(&'a self, type_: Arc<Type>) -> Vec<CompletionItem> {
+        let mut check_type = collapse_links(type_.clone());
+        if let Type::Alias { aliased, .. } = check_type.as_ref() {
+            check_type = aliased.clone();
+        }
         if let Type::Named {
             publicity,
             module: type_module,
             ..
-        } = type_.as_ref()
+        } = check_type.as_ref()
             && publicity.is_internal()
             && *type_module != self.module.name
         {
