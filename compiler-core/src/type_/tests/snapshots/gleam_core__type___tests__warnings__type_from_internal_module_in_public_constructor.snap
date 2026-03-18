@@ -1,0 +1,30 @@
+---
+source: compiler-core/src/type_/tests/warnings.rs
+expression: "\nimport thepackage/internal.{type Wibble}\n\npub type Wobble {\n  Wobble(Wibble)\n}"
+snapshot_kind: text
+---
+----- SOURCE CODE
+-- thepackage/internal.gleam
+pub type Wibble { Wibble }
+
+-- main.gleam
+
+import thepackage/internal.{type Wibble}
+
+pub type Wobble {
+  Wobble(Wibble)
+}
+
+----- WARNING
+warning: Internal type used in public interface
+  ┌─ /src/warning/wrn.gleam:5:3
+  │
+5 │   Wobble(Wibble)
+  │   ^^^^^^^^^^^^^^
+
+The following type is internal, but is being used by this public export.
+
+    Wibble
+
+Internal types should not be used in a public facing function since they are
+hidden from the package's documentation.
