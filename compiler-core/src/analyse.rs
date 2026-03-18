@@ -1679,12 +1679,22 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             return;
         }
 
-        // If a private or internal value references a private type
         if let Some(leaked) = value.type_.find_private_type() {
             self.problems.error(Error::PrivateTypeLeak {
                 location: value.variant.definition_location(),
                 leaked,
             });
+        }
+
+        // Only warn about internal type leaks for public values: an internal
+        // or private value using an internal type is consistent, not a leak.
+        if value.publicity.is_public() {
+            if let Some(leaked) = value.type_.find_internal_type() {
+                self.problems.warning(Warning::InternalTypeLeak {
+                    location: value.variant.definition_location(),
+                    leaked,
+                });
+            }
         }
     }
 

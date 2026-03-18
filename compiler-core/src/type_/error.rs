@@ -1451,6 +1451,10 @@ impl Warning {
     pub(crate) fn is_todo(&self) -> bool {
         matches!(self, Self::Todo { .. })
     }
+
+    pub(crate) fn is_internal_type_leak(&self) -> bool {
+        matches!(self, Self::InternalTypeLeak { .. })
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

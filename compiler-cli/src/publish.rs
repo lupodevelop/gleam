@@ -515,10 +515,19 @@ fn do_build_hex_tarball(paths: &ProjectPaths, config: &mut PackageConfig) -> Res
         });
     }
 
-    // TODO: If any of the modules in the package contain a leaked internal type then
+    // If any of the modules in the package contain a leaked internal type then
     // refuse to publish as the package is not yet finished.
-    // We need to move aliases in to the type system first.
-    // context: https://discord.com/channels/768594524158427167/768594524158427170/1227250677734969386
+    let mut modules_leaking_internal_types = vec![];
+    for module in built.root_package.modules.iter() {
+        if module.ast.type_info.contains_internal_type_leak() {
+            modules_leaking_internal_types.push(module.name.clone());
+        }
+    }
+    if !modules_leaking_internal_types.is_empty() {
+        return Err(Error::CannotPublishLeakedInternalType {
+            unfinished: modules_leaking_internal_types,
+        });
+    }
 
     // Collect all the files we want to include in the tarball
     let generated_files = match target {
