@@ -746,40 +746,15 @@ impl TypeVar {
 }
 
 pub fn collapse_links(t: Arc<Type>) -> Arc<Type> {
-    use std::collections::{HashMap, HashSet};
-
-    fn go(
-        t: &Arc<Type>,
-        seen: &mut HashSet<*const Type>,
-        cache: &mut HashMap<*const Type, Arc<Type>>,
-    ) -> Arc<Type> {
-        let ptr = Arc::as_ptr(t);
-        if let Some(cached) = cache.get(&ptr) {
-            return cached.clone();
-        }
-        if !seen.insert(ptr) {
-            let rv = t.clone();
-            let _ = cache.insert(ptr, rv.clone());
-            return rv;
-        }
-
-        let rv = if let Type::Alias { aliased, .. } = t.deref() {
-            go(aliased, seen, cache)
-        } else if let Type::Var { type_ } = t.deref()
-            && let TypeVar::Link { type_ } = type_.borrow().deref()
-        {
-            go(type_, seen, cache)
-        } else {
-            t.clone()
-        };
-
-        let _ = cache.insert(ptr, rv.clone());
-        rv
+    if let Type::Alias { aliased, .. } = t.deref() {
+        return collapse_links(aliased.clone());
     }
-
-    let mut seen = HashSet::new();
-    let mut cache = HashMap::new();
-    go(&t, &mut seen, &mut cache)
+    if let Type::Var { type_ } = t.deref()
+        && let TypeVar::Link { type_ } = type_.borrow().deref()
+    {
+        return collapse_links(type_.clone());
+    }
+    t
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
