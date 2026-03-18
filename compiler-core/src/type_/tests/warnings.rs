@@ -1555,14 +1555,6 @@ pub fn main() {
     );
 }
 
-/*
-
-TODO: These tests are commented out until we figure out a better way to deal
-      with reexports of internal types and reintroduce the warning.
-      As things stand it would break both Lustre and Mist.
-      You can see the thread starting around here for more context:
-      https://discord.com/channels/768594524158427167/768594524158427170/1227250677734969386
-
 #[test]
 fn internal_type_in_public_function_return() {
     assert_warning!(
@@ -1660,8 +1652,6 @@ pub type Wobble {
     );
 }
 
-*/
-
 // New tests verifying alias behaviour
 #[test]
 fn public_alias_of_internal_type_in_public_signature() {
@@ -1706,13 +1696,14 @@ pub fn foo() -> Outer { Outer }
 }
 
 #[test]
-fn collapse_links_handles_alias_cycle() {
+fn collapse_links_follows_alias_chain() {
     use crate::type_::{collapse_links, Type, Publicity};
     use std::sync::Arc;
 
-    // Build a two‑node cycle manually using `Arc::make_mut` to avoid borrow
-    // conflicts.  We start with two standalone aliases, then mutate each to
-    // point at the other.
+    // Build a two-node alias chain: a → b → Tuple.
+    // Arc::make_mut clones the allocation when the refcount is > 1, so the
+    // result is a chain, not a cycle.  This verifies that collapse_links
+    // correctly traverses alias chains and returns the underlying type.
     let mut a: Arc<Type> = Arc::new(Type::Alias {
         publicity: Publicity::Public,
         aliased: Arc::new(Type::Tuple { elements: vec![] }),
@@ -1737,9 +1728,8 @@ fn collapse_links_handles_alias_cycle() {
         }
     }
 
-    // simply invoke collapse_links; test passes if this call returns
-    // without recursion overflow.
-    let _ = collapse_links(a.clone());
+    let result = collapse_links(a.clone());
+    assert!(matches!(result.as_ref(), Type::Tuple { .. }));
 }
 
 #[test]

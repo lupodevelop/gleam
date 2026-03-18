@@ -546,11 +546,12 @@ impl Type {
 
     pub fn find_internal_type(&self) -> Option<Self> {
         match self {
-            // an alias is only problematic if the alias itself is internal;
-            // a public alias hides any internal components of the underlying
-            // type and thus should not trigger a warning.
-            Self::Alias { publicity, aliased, .. } if publicity.is_public() => None,
-
+            // A public alias shields any internal types it wraps, so it is
+            // safe to use in the public API and should not trigger a warning.
+            // An internal alias is itself the leaked type and must be reported.
+            // A private alias cannot appear in the public API.
+            Self::Alias { publicity, .. } if publicity.is_public() => None,
+            Self::Alias { publicity, .. } if publicity.is_internal() => Some(self.clone()),
             Self::Alias { aliased, .. } => aliased.find_internal_type(),
 
             Self::Named { publicity, .. } if publicity.is_internal() => Some(self.clone()),
@@ -1109,6 +1110,12 @@ pub struct ModuleInterface {
 impl ModuleInterface {
     pub fn contains_todo(&self) -> bool {
         self.warnings.iter().any(|warning| warning.is_todo())
+    }
+
+    pub fn contains_internal_type_leak(&self) -> bool {
+        self.warnings
+            .iter()
+            .any(|warning| warning.is_internal_type_leak())
     }
 }
 

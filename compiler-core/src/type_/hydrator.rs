@@ -222,8 +222,9 @@ impl Hydrator {
                     unify(parameter, argument).map_err(|e| convert_unify_error(e, location))?;
                 }
 
-                // If this constructor corresponds to a type alias we may need to
-                // keep track of that fact in the resulting Type. 
+                // If this constructor corresponds to a type alias we need to
+                // wrap the result in Type::Alias so callers can tell an alias
+                // was used, rather than seeing the underlying type directly.
                 let maybe_alias = if let Some((module_name, _)) = module {
                     // imported module alias? look in the module interface
                     environment
