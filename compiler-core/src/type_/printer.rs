@@ -531,8 +531,9 @@ impl<'a> Printer<'a> {
                         self.print_arguments(parameters, buffer, print_mode);
                         buffer.push(')');
                     }
+                    return;
                 }
-                // no alias name known, fall back to printing inner type
+                // alias name not registered, fall back to printing the underlying type
                 self.print(aliased, buffer, print_mode);
             }
 
