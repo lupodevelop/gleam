@@ -5655,6 +5655,7 @@ impl<'a, IO> PatternMatchOnValue<'a, IO> {
         names: &mut NameGenerator,
     ) -> Option<Vec1<EcoString>> {
         match type_ {
+            Type::Alias { aliased, .. } => self.type_to_destructure_patterns(aliased, names),
             Type::Fn { .. } => None,
             Type::Var { type_ } => self.type_var_to_destructure_patterns(&type_.borrow(), names),
 

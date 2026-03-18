@@ -16,7 +16,7 @@ use crate::{
     },
     parse::PatternPosition,
     reference::ReferenceKind,
-    type_::expression::FunctionDefinition,
+    type_::{collapse_links, expression::FunctionDefinition},
 };
 use std::sync::Arc;
 
@@ -898,6 +898,7 @@ impl<'a, 'b> PatternTyper<'a, 'b> {
             },
 
             Pattern::Tuple { elements, location } => match collapse_links(type_.clone()).deref() {
+                Type::Alias { .. } => unreachable!("collapse_links should remove aliases"),
                 Type::Tuple {
                     elements: type_elements,
                 } => {
@@ -1196,7 +1197,7 @@ impl<'a, 'b> PatternTyper<'a, 'b> {
                 let instantiated_constructor_type =
                     self.environment
                         .instantiate(constructor_type, &mut hashmap![], self.hydrator);
-                match instantiated_constructor_type.deref() {
+                match collapse_links(instantiated_constructor_type.clone()).deref() {
                     Type::Fn { arguments, return_ } => {
                         self.unify_types(type_.clone(), return_.clone(), location);
 
@@ -1236,7 +1237,7 @@ impl<'a, 'b> PatternTyper<'a, 'b> {
                             type_: return_.clone(),
                         }
                     }
-
+                    Type::Alias { .. } => unreachable!("collapse_links should remove aliases"),
                     Type::Named {
                         inferred_variant, ..
                     } => {

@@ -4,6 +4,10 @@
 
 ### Compiler
 
+- Public type aliases no longer trigger the "internal type" warning when
+  returned from a public function; only the alias itself is checked for
+  visibility. ([Daniele Scaratti](https://github.com/lupodevelop))
+
 ### Build tool
 
 ### Language server

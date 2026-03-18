@@ -2,10 +2,11 @@ use bimap::BiMap;
 use ecow::{EcoString, eco_format};
 use im::HashMap;
 use std::{collections::HashSet, sync::Arc};
+use std::ops::Deref;
 
 use crate::{
     ast::SrcSpan,
-    type_::{Type, TypeAliasConstructor, TypeVar},
+    type_::{collapse_links, Type, TypeAliasConstructor, TypeVar},
 };
 
 /// This class keeps track of what names are used for modules in the current
@@ -118,6 +119,14 @@ pub struct Names {
     ///
     local_value_constructors: BiMap<(EcoString, EcoString), EcoString>,
 
+    /// Mapping from the address of a `Type::Alias` instance to the name of
+    /// the alias.  This lets us print the alias name instead of expanding the
+    /// aliased type when we're in a context where the alias is more helpful
+    /// (e.g. hover/completion).  The pointer is obtained from the `Arc`
+    /// containing the type; printing always receives a `&Type` which points to
+    /// the same location.
+    alias_types: HashMap<*const Type, (EcoString, EcoString)>,
+
     /// A map containing information about public alias of internal types in
     /// other packages. This is a common pattern in Gleam, in order to reexport
     /// an internal type, without exposing its implementation details. Because
@@ -165,6 +174,7 @@ impl Names {
             imported_modules: Default::default(),
             type_variables: Default::default(),
             local_value_constructors: Default::default(),
+            alias_types: Default::default(),
             reexport_aliases: Default::default(),
         }
     }
@@ -189,6 +199,16 @@ impl Names {
         parameters: &[Arc<Type>],
     ) {
         match type_ {
+            Type::Alias { aliased, parameters: alias_params, .. } => {
+                if let Type::Named { module, name, arguments, .. } = aliased.deref()
+                    && compare_arguments(arguments, parameters)
+                    && compare_arguments(alias_params, parameters)
+                {
+                    self.named_type_in_scope(module.clone(), name.clone(), local_alias);
+                    return;
+                }
+                _ = self.local_types.remove_by_right(&local_alias);
+            }
             Type::Named {
                 module,
                 name,
@@ -222,6 +242,13 @@ impl Names {
             .map(|(_, location)| location)
     }
 
+    /// When the printer later encounters a `Type::Alias` pointing
+    /// to this location it will print the alias name instead of expanding the
+    /// aliased type.
+    pub fn register_alias(&mut self, alias: &Arc<Type>, module: EcoString, name: EcoString) {
+        let _ = self.alias_types.insert(Arc::as_ptr(alias), (module, name));
+    }
+
     /// Check whether a particular type alias is reexporting an internal type,
     /// and if so register it so we can print it correctly.
     pub fn maybe_register_reexport_alias(
@@ -230,7 +257,10 @@ impl Names {
         alias_name: &EcoString,
         alias: &TypeAliasConstructor,
     ) {
-        match alias.type_.as_ref() {
+        // remember the pointer so that printing can use the alias name
+        self.register_alias(&alias.type_, alias.module.clone(), alias_name.clone());
+        let target = collapse_links(alias.type_.clone());
+        match target.as_ref() {
             Type::Named {
                 publicity,
                 package: type_package,
@@ -243,7 +273,7 @@ impl Names {
                 // - aliasing a type in the same package
                 // - the type is internal
                 // - the alias exposes the same type parameters as the internal type
-                if type_package == package
+                if *type_package == *package
                     && publicity.is_internal()
                     && compare_arguments(arguments, &alias.parameters)
                 {
@@ -253,7 +283,7 @@ impl Names {
                     );
                 }
             }
-            Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } => {}
+            Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {}
         }
     }
 
@@ -475,6 +505,37 @@ impl<'a> Printer<'a> {
 
     fn print(&mut self, type_: &Type, buffer: &mut EcoString, print_mode: PrintMode) {
         match type_ {
+            Type::Alias { aliased, parameters, .. } => {
+                let ptr: *const Type = type_;
+                if let Some((module, alias_name)) = self.names.alias_types.get(&ptr) {
+                    // print the alias name (qualified if necessary) and its
+                    // parameters, then return.
+                    let info = self.names.named_type(module, alias_name, print_mode);
+                    match info {
+                        NameContextInformation::Qualified(module, name) => {
+                            buffer.push_str(module);
+                            buffer.push('.');
+                            buffer.push_str(name);
+                        }
+                        NameContextInformation::Unqualified(name) => {
+                            buffer.push_str(name);
+                        }
+                        NameContextInformation::Unimported(module, name) => {
+                            buffer.push_str(module);
+                            buffer.push('.');
+                            buffer.push_str(name);
+                        }
+                    }
+                    if !parameters.is_empty() {
+                        buffer.push('(');
+                        self.print_arguments(parameters, buffer, print_mode);
+                        buffer.push(')');
+                    }
+                }
+                // no alias name known, fall back to printing inner type
+                self.print(aliased, buffer, print_mode);
+            }
+
             Type::Named {
                 name,
                 arguments,
