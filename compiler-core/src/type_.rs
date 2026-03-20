@@ -56,6 +56,8 @@ pub enum Type {
     /// The alias carries its own publicity so diagnostics can tell "this was an
     /// alias" instead of accidentally warning about the underlying type.
     Alias {
+        name: EcoString,
+        module: EcoString,
         publicity: Publicity,
         aliased: Arc<Type>,
         parameters: Vec<Arc<Type>>,
@@ -447,14 +449,9 @@ impl Type {
         environment: &mut Environment<'_>,
     ) -> Option<Vec<Arc<Self>>> {
         match self {
-            Self::Alias { aliased, .. } => aliased.named_type_arguments(
-                    publicity,
-                    package,
-                    module,
-                    name,
-                    arity,
-                    environment,
-                ),
+            Self::Alias { aliased, .. } => {
+                aliased.named_type_arguments(publicity, package, module, name, arity, environment)
+            }
             Self::Named {
                 module: m,
                 name: n,
@@ -512,7 +509,9 @@ impl Type {
             // A private alias is not visible on the public API, so we skip it
             // entirely.  A public alias may still leak the underlying private
             // type, so we continue to search inside it.
-            Self::Alias { publicity, aliased, .. } if publicity.is_private() => None,
+            Self::Alias {
+                publicity, aliased, ..
+            } if publicity.is_private() => None,
             Self::Alias { aliased, .. } => aliased.find_private_type(),
 
             Self::Named {
@@ -549,10 +548,10 @@ impl Type {
             // A public alias shields any internal types it wraps, so it is
             // safe to use in the public API and should not trigger a warning.
             // An internal alias is itself the leaked type and must be reported.
-            // A private alias cannot appear in the public API.
-            Self::Alias { publicity, .. } if publicity.is_public() => None,
+            // A private alias appearing in a public type is already an error
+            // (caught by find_private_type), so we don't double-report it here.
             Self::Alias { publicity, .. } if publicity.is_internal() => Some(self.clone()),
-            Self::Alias { aliased, .. } => aliased.find_internal_type(),
+            Self::Alias { .. } => None,
 
             Self::Named { publicity, .. } if publicity.is_internal() => Some(self.clone()),
 
@@ -607,7 +606,12 @@ impl Type {
             // two aliases are equal if their publicity and aliased types match;
             // otherwise unwrap the alias and compare the underlying type.
             (
-                Type::Alias { publicity, aliased, parameters, .. },
+                Type::Alias {
+                    publicity,
+                    aliased,
+                    parameters,
+                    ..
+                },
                 Type::Alias {
                     publicity: other_publicity,
                     aliased: other_aliased,
@@ -1760,13 +1764,25 @@ pub fn generalise(t: Arc<Type>) -> Arc<Type> {
             }),
         },
 
-        Type::Alias { publicity, aliased, parameters } => {
+        Type::Alias {
+            name,
+            module,
+            publicity,
+            aliased,
+            parameters,
+        } => {
             let aliased = generalise(aliased.clone());
             let parameters = parameters
                 .iter()
                 .map(|type_| generalise(type_.clone()))
                 .collect();
-            Arc::new(Type::Alias { publicity: *publicity, aliased, parameters })
+            Arc::new(Type::Alias {
+                name: name.clone(),
+                module: module.clone(),
+                publicity: *publicity,
+                aliased,
+                parameters,
+            })
         }
 
         Type::Named {

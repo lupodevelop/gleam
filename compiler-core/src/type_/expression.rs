@@ -1549,10 +1549,12 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                 location: tuple.location(),
             }),
 
-            Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } | Type::Alias { .. } => Err(Error::NotATuple {
-                location: tuple.location(),
-                given: tuple.type_(),
-            }),
+            Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } | Type::Alias { .. } => {
+                Err(Error::NotATuple {
+                    location: tuple.location(),
+                    given: tuple.type_(),
+                })
+            }
         }
     }
 
@@ -2536,12 +2538,13 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                         location: tuple.location(),
                     }),
 
-                    Type::Named { .. } | Type::Fn { .. } | Type::Var { .. } | Type::Alias { .. } => {
-                        Err(Error::NotATuple {
-                            location: tuple.location(),
-                            given: tuple.type_(),
-                        })
-                    }
+                    Type::Named { .. }
+                    | Type::Fn { .. }
+                    | Type::Var { .. }
+                    | Type::Alias { .. } => Err(Error::NotATuple {
+                        location: tuple.location(),
+                        given: tuple.type_(),
+                    }),
                 }
             }
 
@@ -3269,7 +3272,10 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                                 ))
                             }),
 
-                        Type::Fn { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
+                        Type::Fn { .. }
+                        | Type::Var { .. }
+                        | Type::Tuple { .. }
+                        | Type::Alias { .. } => {
                             panic!("Type has already checked to be valid")
                         }
                     }
@@ -3837,7 +3843,10 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
                 // Extract field types and return type from the instantiated constructor
                 let (field_types, expected_type) = match instantiated_constructor_type.as_ref() {
                     Type::Fn { arguments, return_ } => (arguments.clone(), return_.clone()),
-                    Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
+                    Type::Named { .. }
+                    | Type::Var { .. }
+                    | Type::Tuple { .. }
+                    | Type::Alias { .. } => {
                         self.problems.error(Error::RecordUpdateInvalidConstructor {
                             location: constructor_location,
                         });

@@ -273,6 +273,8 @@ impl Hydrator {
                     // linked during unification and now reflect the final types.
                     let parameters = parameter_types;
                     return Ok(Arc::new(Type::Alias {
+                        name: name.clone(),
+                        module: alias_info.module.clone(),
                         publicity,
                         aliased,
                         parameters,

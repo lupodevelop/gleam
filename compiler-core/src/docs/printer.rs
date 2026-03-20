@@ -441,7 +441,11 @@ impl Printer<'_> {
 
     fn type_(&mut self, type_: &Type, print_mode: PrintMode) -> Document<'static> {
         match type_ {
-            Type::Alias { aliased, parameters: _parameters, .. } => {
+            Type::Alias {
+                aliased,
+                parameters: _parameters,
+                ..
+            } => {
                 // For documentation purposes we simply render the aliased
                 // type.
                 self.type_(aliased, print_mode)

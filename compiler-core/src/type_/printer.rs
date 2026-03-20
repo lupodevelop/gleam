@@ -1,12 +1,12 @@
 use bimap::BiMap;
 use ecow::{EcoString, eco_format};
 use im::HashMap;
-use std::{collections::HashSet, sync::Arc};
 use std::ops::Deref;
+use std::{collections::HashSet, sync::Arc};
 
 use crate::{
     ast::SrcSpan,
-    type_::{collapse_links, Type, TypeAliasConstructor, TypeVar},
+    type_::{Type, TypeAliasConstructor, TypeVar, collapse_links},
 };
 
 /// This class keeps track of what names are used for modules in the current
@@ -199,8 +199,17 @@ impl Names {
         parameters: &[Arc<Type>],
     ) {
         match type_ {
-            Type::Alias { aliased, parameters: alias_params, .. } => {
-                if let Type::Named { module, name, arguments, .. } = aliased.deref()
+            Type::Alias {
+                aliased,
+                parameters: alias_params,
+                ..
+            } => {
+                if let Type::Named {
+                    module,
+                    name,
+                    arguments,
+                    ..
+                } = aliased.deref()
                     && compare_arguments(arguments, parameters)
                     && compare_arguments(alias_params, parameters)
                 {
@@ -505,36 +514,37 @@ impl<'a> Printer<'a> {
 
     fn print(&mut self, type_: &Type, buffer: &mut EcoString, print_mode: PrintMode) {
         match type_ {
-            Type::Alias { aliased, parameters, .. } => {
-                let ptr: *const Type = type_;
-                if let Some((module, alias_name)) = self.names.alias_types.get(&ptr) {
-                    // print the alias name (qualified if necessary) and its
-                    // parameters, then return.
-                    let info = self.names.named_type(module, alias_name, print_mode);
-                    match info {
-                        NameContextInformation::Qualified(module, name) => {
-                            buffer.push_str(module);
-                            buffer.push('.');
-                            buffer.push_str(name);
-                        }
-                        NameContextInformation::Unqualified(name) => {
-                            buffer.push_str(name);
-                        }
-                        NameContextInformation::Unimported(module, name) => {
-                            buffer.push_str(module);
-                            buffer.push('.');
-                            buffer.push_str(name);
-                        }
+            Type::Alias {
+                name,
+                module,
+                parameters,
+                ..
+            } => {
+                let info = self.names.named_type(module, name, print_mode);
+                match info {
+                    NameContextInformation::Qualified(module, name) => {
+                        buffer.push_str(module);
+                        buffer.push('.');
+                        buffer.push_str(name);
                     }
-                    if !parameters.is_empty() {
-                        buffer.push('(');
-                        self.print_arguments(parameters, buffer, print_mode);
-                        buffer.push(')');
+                    NameContextInformation::Unqualified(name) => {
+                        buffer.push_str(name);
                     }
-                    return;
+                    NameContextInformation::Unimported(module, name) => {
+                        // alias not imported: show the module-qualified name so
+                        // the user knows which type is actually leaking.
+                        if let Some(short) = module.split('/').next_back() {
+                            buffer.push_str(short);
+                            buffer.push('.');
+                        }
+                        buffer.push_str(name);
+                    }
                 }
-                // alias name not registered, fall back to printing the underlying type
-                self.print(aliased, buffer, print_mode);
+                if !parameters.is_empty() {
+                    buffer.push('(');
+                    self.print_arguments(parameters, buffer, print_mode);
+                    buffer.push(')');
+                }
             }
 
             Type::Named {
