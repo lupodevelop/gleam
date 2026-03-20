@@ -3477,3 +3477,40 @@ pub fn go(value: Type) {
 }"
     );
 }
+
+#[test]
+fn alias_type_mismatch_error_message() {
+    assert_module_error!(
+        "type MyAlias = Int
+
+pub fn expect_alias(x: MyAlias) -> MyAlias { x }
+
+pub fn bad() -> MyAlias {
+  expect_alias(\"hello\")
+}"
+    );
+}
+
+#[test]
+fn alias_with_param_type_mismatch_error_message() {
+    assert_module_error!(
+        "type Pair(a) = #(a, a)
+
+pub fn bad() -> Pair(Int) {
+  #(1, \"hello\")
+}"
+    );
+}
+
+#[test]
+fn cross_module_alias_type_mismatch_error_message() {
+    assert_module_error!(
+        ("wibble", "pub type MyAlias = Int"),
+        "
+import wibble.{type MyAlias}
+
+pub fn bad() -> MyAlias {
+  \"hello\"
+}"
+    );
+}
