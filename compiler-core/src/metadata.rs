@@ -629,10 +629,14 @@ impl RemapIds {
                     .collect(),
             },
             Type::Alias {
+                name,
+                module,
                 publicity,
                 aliased,
                 parameters,
             } => Type::Alias {
+                name,
+                module,
                 publicity,
                 aliased: self.type_(aliased),
                 parameters: parameters

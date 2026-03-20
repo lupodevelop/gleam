@@ -9,7 +9,7 @@ mod tests;
 use crate::build::{Target, module_erlang_name};
 use crate::erlang::pattern::{PatternPrinter, StringPatternAssignment};
 use crate::strings::{convert_string_escape_chars, to_snake_case};
-use crate::type_::{is_prelude_module, collapse_links};
+use crate::type_::{collapse_links, is_prelude_module};
 use crate::{
     Result,
     ast::{Function, *},
@@ -1485,7 +1485,7 @@ fn var<'a>(name: &'a str, constructor: &'a ValueConstructor, env: &mut Env<'a>) 
                 }
                 Type::Alias { .. } => unreachable!(),
             }
-        },
+        }
 
         ValueConstructorVariant::LocalVariable { .. } => env.local_var_name(name),
 
@@ -1576,7 +1576,7 @@ fn const_inline<'a>(literal: &'a TypedConstant, env: &mut Env<'a>) -> Document<'
                 }
                 Type::Alias { .. } => unreachable!(),
             }
-        },
+        }
 
         Constant::Record { tag, arguments, .. } => {
             // Record updates are fully expanded during type checking, so we just handle arguments
@@ -2905,10 +2905,12 @@ fn module_select_fn<'a>(type_: Arc<Type>, module_name: &'a str, label: &'a str) 
     match collapse_links(type_).as_ref() {
         Type::Fn { arguments, .. } => function_reference(Some(module_name), label, arguments.len()),
 
-        Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => module_name_atom(module_name)
-            .append(":")
-            .append(atom(label))
-            .append("()"),
+        Type::Named { .. } | Type::Var { .. } | Type::Tuple { .. } | Type::Alias { .. } => {
+            module_name_atom(module_name)
+                .append(":")
+                .append(atom(label))
+                .append("()")
+        }
     }
 }
 

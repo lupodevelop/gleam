@@ -1688,13 +1688,13 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
 
         // Only warn about internal type leaks for public values: an internal
         // or private value using an internal type is consistent, not a leak.
-        if value.publicity.is_public() {
-            if let Some(leaked) = value.type_.find_internal_type() {
-                self.problems.warning(Warning::InternalTypeLeak {
-                    location: value.variant.definition_location(),
-                    leaked,
-                });
-            }
+        if value.publicity.is_public()
+            && let Some(leaked) = value.type_.find_internal_type()
+        {
+            self.problems.warning(Warning::InternalTypeLeak {
+                location: value.variant.definition_location(),
+                leaked,
+            });
         }
     }
 

@@ -10,7 +10,7 @@ use crate::{
     io::ordered_map,
     type_::{
         self, Deprecation, Opaque, Type, TypeConstructor, TypeVar, TypeVariantConstructors,
-        ValueConstructorVariant, expression::Implementations, collapse_links,
+        ValueConstructorVariant, collapse_links, expression::Implementations,
     },
 };
 

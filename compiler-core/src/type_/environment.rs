@@ -609,13 +609,25 @@ impl Environment<'_> {
         hydrator: &Hydrator,
     ) -> Arc<Type> {
         match t.deref() {
-            Type::Alias { publicity, aliased, parameters } => {
+            Type::Alias {
+                name,
+                module,
+                publicity,
+                aliased,
+                parameters,
+            } => {
                 let aliased = self.instantiate(aliased.clone(), ids, hydrator);
                 let parameters = parameters
                     .iter()
                     .map(|type_| self.instantiate(type_.clone(), ids, hydrator))
                     .collect();
-                Arc::new(Type::Alias { publicity: *publicity, aliased, parameters })
+                Arc::new(Type::Alias {
+                    name: name.clone(),
+                    module: module.clone(),
+                    publicity: *publicity,
+                    aliased,
+                    parameters,
+                })
             }
             Type::Named {
                 publicity,

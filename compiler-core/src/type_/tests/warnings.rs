@@ -1663,7 +1663,8 @@ pub type Internal { Internal }
 pub type Alias = Internal
 
 pub fn foo() -> Alias { Alias }
-"    );
+"
+    );
 }
 
 #[test]
@@ -1692,12 +1693,13 @@ pub type Mid = Internal
 pub type Outer = Mid
 
 pub fn foo() -> Outer { Outer }
-"    );
+"
+    );
 }
 
 #[test]
 fn collapse_links_follows_alias_chain() {
-    use crate::type_::{collapse_links, Type, Publicity};
+    use crate::type_::{Publicity, Type, collapse_links};
     use std::sync::Arc;
 
     // Build a two-node alias chain: a → b → Tuple.
@@ -1705,11 +1707,15 @@ fn collapse_links_follows_alias_chain() {
     // result is a chain, not a cycle.  This verifies that collapse_links
     // correctly traverses alias chains and returns the underlying type.
     let mut a: Arc<Type> = Arc::new(Type::Alias {
+        name: "A".into(),
+        module: "test".into(),
         publicity: Publicity::Public,
         aliased: Arc::new(Type::Tuple { elements: vec![] }),
         parameters: vec![],
     });
     let mut b: Arc<Type> = Arc::new(Type::Alias {
+        name: "B".into(),
+        module: "test".into(),
         publicity: Publicity::Public,
         aliased: Arc::new(Type::Tuple { elements: vec![] }),
         parameters: vec![],
@@ -1734,7 +1740,7 @@ fn collapse_links_follows_alias_chain() {
 
 #[test]
 fn collapse_links_idempotent() {
-    use crate::type_::{collapse_links, Type, Publicity};
+    use crate::type_::{Publicity, Type, collapse_links};
     use std::sync::Arc;
 
     // build a long chain of aliases wrapping a simple named type
@@ -1748,6 +1754,8 @@ fn collapse_links_idempotent() {
     });
     for _ in 0..100 {
         t = Arc::new(Type::Alias {
+            name: "Alias".into(),
+            module: "test".into(),
             publicity: Publicity::Public,
             aliased: t.clone(),
             parameters: vec![],
@@ -1758,6 +1766,46 @@ fn collapse_links_idempotent() {
     let second = collapse_links(t.clone());
     // collapsing the same type twice should yield structurally equal results
     assert_eq!(first, second);
+}
+
+#[test]
+fn internal_alias_in_public_signature_warns() {
+    assert_warning!(
+        "
+@internal
+pub type InternalAlias = Int
+
+pub fn foo() -> InternalAlias { 1 }
+"
+    );
+}
+
+#[test]
+fn internal_type_in_generic_position_warns() {
+    assert_warning!(
+        "
+@internal
+pub type Internal {
+  Internal
+}
+
+pub fn foo() -> List(Internal) { [] }
+"
+    );
+}
+
+#[test]
+fn internal_type_in_public_constant_warns() {
+    assert_warning!(
+        "
+@internal
+pub type Internal {
+  Internal
+}
+
+pub const c: Internal = Internal
+"
+    );
 }
 
 #[test]

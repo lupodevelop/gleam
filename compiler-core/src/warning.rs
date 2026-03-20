@@ -1012,7 +1012,13 @@ variable, or delete the expression entirely if it's not needed.",
                 },
 
                 type_::Warning::InternalTypeLeak { location, leaked } => {
-                    let mut printer = Printer::new();
+                    // For type aliases, use the alias name directly so the
+                    // warning names the alias the user wrote rather than the
+                    // expanded underlying type.
+                    let leaked_str = match leaked {
+                        type_::Type::Alias { name, .. } => format!("    {name}"),
+                        _ => Printer::new().pretty_print(leaked, 4),
+                    };
 
                     // TODO: be more precise.
                     // - is being returned by this public function
@@ -1026,7 +1032,7 @@ variable, or delete the expression entirely if it's not needed.",
 
 Internal types should not be used in a public facing function since they are
 hidden from the package's documentation.",
-                        printer.pretty_print(leaked, 4),
+                        leaked_str,
                     );
                     Diagnostic {
                         title: "Internal type used in public interface".into(),

@@ -3194,7 +3194,15 @@ impl ConstructorSpecialiser {
 
     fn specialise_type(&self, type_: &Type) -> Arc<Type> {
         Arc::new(match type_ {
-            Type::Alias { publicity, aliased, parameters } => Type::Alias {
+            Type::Alias {
+                name,
+                module,
+                publicity,
+                aliased,
+                parameters,
+            } => Type::Alias {
+                name: name.clone(),
+                module: module.clone(),
                 publicity: *publicity,
                 aliased: self.specialise_type(aliased.as_ref()),
                 parameters: parameters
