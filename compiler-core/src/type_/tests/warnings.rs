@@ -1809,6 +1809,23 @@ pub const c: Internal = Internal
 }
 
 #[test]
+fn internal_type_used_by_internal_function_does_not_warn() {
+    // An @internal function using an @internal type is consistent: neither is
+    // visible to external users, so no warning should be emitted.
+    assert_no_warnings!(
+        "
+@internal
+pub type Internal {
+  Internal
+}
+
+@internal
+pub fn foo() -> Internal { Internal }
+"
+    );
+}
+
+#[test]
 fn redundant_let_assert() {
     assert_warning!(
         "
