@@ -3136,14 +3136,13 @@ impl<'a, 'b> ExprTyper<'a, 'b> {
             }
 
             if let Some(index) = fields.remove(label) {
-                // If the variant has the given field, we need to check it's
+                // If the variant has the given field, we need to check its
                 // inferred type is correct.
                 // If an error happens we record it, but don't early return.
-                // We still want to accumulate errors for all field to come!
+                // We still want to accumulate errors for all fields!
                 if let Err(error) = unify(variant.arg_type(index), value.type_()) {
                     self.problems.error(convert_unify_error(error, *location));
                 };
-
                 explicit_arguments.push((
                     index,
                     CallArg {
