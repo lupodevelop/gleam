@@ -1022,11 +1022,16 @@ variable, or delete the expression entirely if it's not needed.",
                 },
 
                 type_::Warning::InternalTypeLeak { location, leaked } => {
-                    // For type aliases, use the alias name directly so the
-                    // warning names the alias the user wrote rather than the
-                    // expanded underlying type.
+                    // For type aliases, format the alias name with its module so
+                    // the warning names the alias the user wrote rather than the
+                    // expanded underlying type. The pretty-printer expands aliases,
+                    // so we handle them explicitly here.
                     let leaked_str = match leaked {
-                        type_::Type::Alias { name, .. } => format!("    {name}"),
+                        type_::Type::Alias { name, module, .. } => {
+                            let short_module =
+                                module.split('/').next_back().unwrap_or(module.as_str());
+                            format!("    {short_module}.{name}")
+                        }
                         _ => Printer::new().pretty_print(leaked, 4),
                     };
 
