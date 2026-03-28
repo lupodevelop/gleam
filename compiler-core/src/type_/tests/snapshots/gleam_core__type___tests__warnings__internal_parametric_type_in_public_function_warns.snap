@@ -1,0 +1,29 @@
+---
+source: compiler-core/src/type_/tests/warnings.rs
+assertion_line: 1819
+expression: "\n@internal\npub type InternalBox(a) {\n  InternalBox(value: a)\n}\n\npub fn new(x: Int) -> InternalBox(Int) { InternalBox(x) }\n"
+snapshot_kind: text
+---
+----- SOURCE CODE
+
+@internal
+pub type InternalBox(a) {
+  InternalBox(value: a)
+}
+
+pub fn new(x: Int) -> InternalBox(Int) { InternalBox(x) }
+
+
+----- WARNING
+warning: Internal type used in public interface
+  ┌─ /src/warning/wrn.gleam:7:1
+  │
+7 │ pub fn new(x: Int) -> InternalBox(Int) { InternalBox(x) }
+  │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following type is internal, but is being used by this public export.
+
+    InternalBox(Int)
+
+Internal types should not be used in a public facing function since they are
+hidden from the package's documentation.
