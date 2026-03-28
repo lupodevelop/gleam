@@ -1702,39 +1702,26 @@ fn collapse_links_follows_alias_chain() {
     use crate::type_::{Publicity, Type, collapse_links};
     use std::sync::Arc;
 
-    // Build a two-node alias chain: a → b → Tuple.
-    // Arc::make_mut clones the allocation when the refcount is > 1, so the
-    // result is a chain, not a cycle.  This verifies that collapse_links
-    // correctly traverses alias chains and returns the underlying type.
-    let mut a: Arc<Type> = Arc::new(Type::Alias {
-        name: "A".into(),
-        module: "test".into(),
-        publicity: Publicity::Public,
-        aliased: Arc::new(Type::Tuple { elements: vec![] }),
-        parameters: vec![],
-    });
-    let mut b: Arc<Type> = Arc::new(Type::Alias {
+    // Build a two-alias chain directly: a → b → Tuple(empty).
+    // Verifies that collapse_links traverses the full chain and returns the
+    // underlying non-alias type.
+    let tuple = Arc::new(Type::Tuple { elements: vec![] });
+    let b = Arc::new(Type::Alias {
         name: "B".into(),
         module: "test".into(),
         publicity: Publicity::Public,
-        aliased: Arc::new(Type::Tuple { elements: vec![] }),
+        aliased: tuple,
+        parameters: vec![],
+    });
+    let a = Arc::new(Type::Alias {
+        name: "A".into(),
+        module: "test".into(),
+        publicity: Publicity::Public,
+        aliased: b,
         parameters: vec![],
     });
 
-    {
-        let a_mut = Arc::make_mut(&mut a);
-        if let Type::Alias { aliased, .. } = a_mut {
-            *aliased = b.clone();
-        }
-    }
-    {
-        let b_mut = Arc::make_mut(&mut b);
-        if let Type::Alias { aliased, .. } = b_mut {
-            *aliased = a.clone();
-        }
-    }
-
-    let result = collapse_links(a.clone());
+    let result = collapse_links(a);
     assert!(matches!(result.as_ref(), Type::Tuple { .. }));
 }
 
@@ -1762,9 +1749,9 @@ fn collapse_links_idempotent() {
         });
     }
 
-    let first = collapse_links(t.clone());
-    let second = collapse_links(t.clone());
-    // collapsing the same type twice should yield structurally equal results
+    let first = collapse_links(t);
+    let second = collapse_links(first.clone());
+    // collapse_links is idempotent: applying it to its own output is a no-op
     assert_eq!(first, second);
 }
 
