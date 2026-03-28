@@ -1189,7 +1189,11 @@ impl TypeVariantConstructors {
                         Type::Named { .. } | Type::Fn { .. } | Type::Tuple { .. } => {
                             panic!("{}", error)
                         }
-                        Type::Alias { .. } => panic!("nested alias in parameter"),
+                        // A type parameter must resolve to a generic TypeVar.
+                        // Nested aliases cannot appear here because the hydrator
+                        // only wraps the *return* type in Type::Alias, never a
+                        // bare type parameter variable.
+                        Type::Alias { .. } => unreachable!("nested alias in type parameter"),
                     },
                     Type::Var { type_ } => match type_.borrow().deref() {
                         TypeVar::Generic { id } => *id,
