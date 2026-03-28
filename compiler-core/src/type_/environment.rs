@@ -1018,7 +1018,7 @@ pub fn unify(t1: Arc<Type>, t2: Arc<Type>) -> Result<(), UnifyError> {
         return Ok(());
     }
 
-    // Collapse right hand side type links. Left hand side will be collapsed in the next block.
+    // Collapse any remaining TypeVar::Link on the right-hand side.
     if let Type::Var { type_ } = t2.deref()
         && let TypeVar::Link { type_ } = type_.borrow().deref()
     {
