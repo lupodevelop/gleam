@@ -1813,6 +1813,53 @@ pub fn foo() -> Internal { Internal }
 }
 
 #[test]
+fn internal_parametric_type_in_public_function_warns() {
+    // A parametric @internal type used in a public function should warn,
+    // even when applied to public type arguments.
+    assert_warning!(
+        "
+@internal
+pub type InternalBox(a) {
+  InternalBox(value: a)
+}
+
+pub fn new(x: Int) -> InternalBox(Int) { InternalBox(x) }
+"
+    );
+}
+
+#[test]
+fn public_parametric_alias_of_internal_type_does_not_warn() {
+    // A public parametric alias shields the underlying internal type.
+    // Using the alias in a public function should produce no warning.
+    assert_no_warnings!(
+        "
+@internal
+pub type InternalBox(a) {
+  InternalBox(value: a)
+}
+
+pub type Box(a) = InternalBox(a)
+
+pub fn new(x: Int) -> Box(Int) { InternalBox(x) }
+"
+    );
+}
+
+#[test]
+fn internal_parametric_alias_in_public_function_warns() {
+    // An @internal parametric alias is itself the leaked type.
+    assert_warning!(
+        "
+@internal
+pub type Alias(a) = List(a)
+
+pub fn foo() -> Alias(Int) { [] }
+"
+    );
+}
+
+#[test]
 fn redundant_let_assert() {
     assert_warning!(
         "
