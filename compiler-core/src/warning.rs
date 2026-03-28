@@ -1012,11 +1012,16 @@ variable, or delete the expression entirely if it's not needed.",
                 },
 
                 type_::Warning::InternalTypeLeak { location, leaked } => {
-                    // For type aliases, use the alias name directly so the
-                    // warning names the alias the user wrote rather than the
-                    // expanded underlying type.
+                    // For type aliases, format the alias name with its module so
+                    // the warning names the alias the user wrote rather than the
+                    // expanded underlying type. The pretty-printer expands aliases,
+                    // so we handle them explicitly here.
                     let leaked_str = match leaked {
-                        type_::Type::Alias { name, .. } => format!("    {name}"),
+                        type_::Type::Alias { name, module, .. } => {
+                            let short_module =
+                                module.split('/').next_back().unwrap_or(module.as_str());
+                            format!("    {short_module}.{name}")
+                        }
                         _ => Printer::new().pretty_print(leaked, 4),
                     };
 
@@ -1369,6 +1374,29 @@ doesn't fit in that many {unit}. It would be truncated by taking its {taken}, re
                                     "You can safely replace this with {truncated_into}"
                                 )),
                                 span: *value_location,
+                            },
+                            extra_labels: vec![],
+                        }),
+                    }
+                }
+
+                type_::Warning::JavaScriptBitArrayUnsafeInt { location, size } => {
+                    let text = wrap(&format!(
+                        "This segment is a {size}-bit long integer, but on the \
+JavaScript target numbers have at most 52 bits. It would be truncated to its \
+first 52 bits."
+                    ));
+                    Diagnostic {
+                        title: "Truncated bit array segment".into(),
+                        text,
+                        hint: Some("Did you mean to use the `bytes` segment option?".into()),
+                        level: diagnostic::Level::Warning,
+                        location: Some(Location {
+                            path: path.to_path_buf(),
+                            src: src.clone(),
+                            label: diagnostic::Label {
+                                text: None,
+                                span: *location,
                             },
                             extra_labels: vec![],
                         }),
