@@ -270,7 +270,6 @@ Parsed {
             imported_modules: {},
             type_variables: {},
             local_value_constructors: {},
-            alias_types: {},
             reexport_aliases: {},
         },
         unused_definition_positions: {},
