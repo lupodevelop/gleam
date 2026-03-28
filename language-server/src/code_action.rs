@@ -8707,7 +8707,8 @@ impl<'a> RemoveUnusedImports<'a> {
                 | type_::Warning::ModuleImportedTwice { .. }
                 | type_::Warning::TopLevelDefinitionShadowsImport { .. }
                 | type_::Warning::RedundantComparison { .. }
-                | type_::Warning::UnusedRecursiveArgument { .. } => None,
+                | type_::Warning::UnusedRecursiveArgument { .. }
+                | type_::Warning::JavaScriptBitArrayUnsafeInt { .. } => None,
             })
             .sorted_by_key(|import| import.location())
             .collect_vec();
