@@ -107,10 +107,12 @@
 
   ([Surya Rose](https://github.com/GearsDatapacks))
 
-- The compiler now emits a warning when an `@internal` type appears in the
-  public API of a module (e.g. as the return type or argument of a public
-  function). Public type aliases are checked for their own visibility only and
-  do not trigger the warning based on their aliased type.
+- The compiler now warns when a public function, constructor, or constant
+  exposes an `@internal` type — for example as a return type or argument.
+  This helps catch accidental API surface leaks where a type has no
+  documentation and callers cannot refer to it by name.
+  Using `pub type Alias = InternalType` is a safe escape hatch: the alias is
+  public, so using it in a public signature does not trigger the warning.
   ([Daniele Scaratti](https://github.com/lupodevelop))
 
 
@@ -174,9 +176,13 @@
 - Documentation for `--target` option has been improved to include more
   details.
   ([Andrey Kozhev](https://github.com/ankddev))
-- `gleam publish` now refuses to publish a package if any of its modules expose
-  `@internal` types in their public API. Remove the `@internal` annotation or
-  update the affected signatures before publishing.
+- `gleam publish` now refuses to publish a package whose public API exposes
+  an `@internal` type directly. If you see this error, either remove the
+  `@internal` annotation from the type, introduce a public alias, or update
+  the affected signatures to use a non-internal type.
+  > **Note:** this release changes the internal format used to cache compiled
+  > module metadata. After upgrading, run `gleam clean` once in each of your
+  > projects to avoid stale-cache errors
   ([Daniele Scaratti](https://github.com/lupodevelop))
 
 ### Language server
