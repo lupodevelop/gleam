@@ -1155,14 +1155,14 @@ pub enum Warning {
     UnusedRecursiveArgument {
         location: SrcSpan,
     },
+
     /// This happens when destructuring a bit array integer segment with a size
     /// that is bigger than 52 bits.
     /// ```gleam
     /// <<n:size(125)>>
     /// ```
-    /// On the JS target this would try and build an integer with 152 bits,
-    /// while the maximum size is 52 bits, resulting in some confusing
-    /// truncations.
+    /// On the JS target this would try and build an integer with 125 bits,
+    /// while the maximum safe integer size is 52 bits, resulting in truncation.
     ///
     JavaScriptBitArrayUnsafeInt {
         location: SrcSpan,
