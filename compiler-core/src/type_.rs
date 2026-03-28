@@ -548,8 +548,10 @@ impl Type {
             // A public alias shields any internal types it wraps, so it is
             // safe to use in the public API and should not trigger a warning.
             // An internal alias is itself the leaked type and must be reported.
-            // A private alias appearing in a public type is already an error
-            // (caught by find_private_type), so we don't double-report it here.
+            // A private alias in a public type is prevented at an earlier
+            // compilation stage by Gleam's privacy checker (note: find_private_type
+            // also returns None for private aliases). We return None here to
+            // avoid any double-reporting.
             Self::Alias { publicity, .. } if publicity.is_internal() => Some(self.clone()),
             Self::Alias { .. } => None,
 
@@ -603,8 +605,14 @@ impl Type {
     ///
     pub fn same_as(&self, other: &Self) -> bool {
         match (self, other) {
-            // two aliases are equal if their publicity and aliased types match;
-            // otherwise unwrap the alias and compare the underlying type.
+            // Two aliases are structurally equal when their publicity, type
+            // parameters, and aliased types all match. `name` and `module` are
+            // intentionally ignored: same_as tests type-system equality, not
+            // alias identity. Two aliases that wrap the same type with equal
+            // parameters and publicity are considered the same regardless of
+            // their names (e.g. `pub type Foo = Int` and `pub type Bar = Int`).
+            // For identity-sensitive comparisons, use `PartialEq` instead.
+            // The asymmetric arms below handle Alias vs non-Alias by unwrapping.
             (
                 Type::Alias {
                     publicity,
