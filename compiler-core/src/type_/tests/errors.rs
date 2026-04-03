@@ -3618,4 +3618,3 @@ pub fn bad() -> MyAlias {
 }"
     );
 }
-
