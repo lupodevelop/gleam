@@ -260,7 +260,7 @@ impl Hydrator {
                     // imported module alias? look in the module interface
                     environment
                         .importable_modules
-                        .get(module_name)
+                        .get(&module_name)
                         .and_then(|m| m.type_aliases.get(name))
                 } else {
                     environment.module_type_aliases.get(name)
