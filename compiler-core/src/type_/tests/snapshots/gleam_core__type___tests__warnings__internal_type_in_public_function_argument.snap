@@ -1,7 +1,6 @@
 ---
 source: compiler-core/src/type_/tests/warnings.rs
 expression: "\n@internal\npub type Wibble {\n  Wibble\n}\n\npub fn wibble(_wibble: Wibble) -> Int { 1 }\n"
-snapshot_kind: text
 ---
 ----- SOURCE CODE
 
@@ -24,5 +23,5 @@ The following type is internal, but is being used by this public export.
 
     Wibble
 
-Internal types should not be used in a public facing function since they are
-hidden from the package's documentation.
+Internal types should not be used in a public facing function since they
+are hidden from the package's documentation.
