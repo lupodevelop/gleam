@@ -1022,10 +1022,8 @@ variable, or delete the expression entirely if it's not needed.",
                 },
 
                 type_::Warning::InternalTypeLeak { location, leaked } => {
-                    // For type aliases, format the alias name with its module so
-                    // the warning names the alias the user wrote rather than the
-                    // expanded underlying type. The pretty-printer expands aliases,
-                    // so we handle them explicitly here.
+                    // The pretty-printer expands aliases, so print alias names
+                    // explicitly to show what the user wrote.
                     let leaked_str = match leaked {
                         type_::Type::Alias { name, module, .. } => {
                             let short_module =

@@ -506,9 +506,6 @@ impl Type {
 
     pub fn find_private_type(&self) -> Option<Self> {
         match self {
-            // A private alias is not visible on the public API, so we skip it
-            // entirely.  A public alias may still leak the underlying private
-            // type, so we continue to search inside it.
             Self::Alias {
                 publicity, aliased, ..
             } if publicity.is_private() => None,
@@ -545,13 +542,10 @@ impl Type {
 
     pub fn find_internal_type(&self) -> Option<Self> {
         match self {
-            // A public alias shields any internal types it wraps, so it is
-            // safe to use in the public API and should not trigger a warning.
-            // An internal alias is itself the leaked type and must be reported.
-            // A private alias in a public type is prevented at an earlier
-            // compilation stage by Gleam's privacy checker (note: find_private_type
-            // also returns None for private aliases). We return None here to
-            // avoid any double-reporting.
+            // An internal alias is itself the leak. A public alias shields its
+            // inner type (callers see only the alias name). Private aliases are
+            // caught earlier by find_private_type, so return None to avoid
+            // double-reporting.
             Self::Alias { publicity, .. } if publicity.is_internal() => Some(self.clone()),
             Self::Alias { .. } => None,
 
@@ -605,14 +599,8 @@ impl Type {
     ///
     pub fn same_as(&self, other: &Self) -> bool {
         match (self, other) {
-            // Two aliases are structurally equal when their publicity, type
-            // parameters, and aliased types all match. `name` and `module` are
-            // intentionally ignored: same_as tests type-system equality, not
-            // alias identity. Two aliases that wrap the same type with equal
-            // parameters and publicity are considered the same regardless of
-            // their names (e.g. `pub type Foo = Int` and `pub type Bar = Int`).
-            // For identity-sensitive comparisons, use `PartialEq` instead.
-            // The asymmetric arms below handle Alias vs non-Alias by unwrapping.
+            // name/module are intentionally ignored: same_as tests structural
+            // type equality, not alias identity. Use PartialEq for that.
             (
                 Type::Alias {
                     publicity,
@@ -722,9 +710,6 @@ impl TypeVar {
             (TypeVar::Unbound { .. }, _) => true,
             (TypeVar::Link { type_ }, other) => type_.same_as(other),
 
-            // When comparing a generic variable against an alias we simply
-            // inspect the aliased type instead.  This mirrors behaviour when
-            // the alias is expanded in other comparisons.
             (one @ TypeVar::Generic { .. }, Type::Alias { aliased, .. }) => {
                 one.same_as_other_type(aliased)
             }
