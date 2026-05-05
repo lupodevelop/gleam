@@ -21,7 +21,7 @@ annotation of this function.
 
 Expected type:
 
-    Pair(Int)
+    Pair(Int) (i.e. #(Int, Int))
 
 Found type:
 

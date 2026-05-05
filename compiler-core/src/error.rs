@@ -2989,9 +2989,9 @@ But function expects:
                     "".into()
                 };
             text.push_str("Expected type:\n\n    ");
-            text.push_str(&printer.print_type(expected));
+            text.push_str(&print_with_expansion(&mut printer, expected));
             text.push_str("\n\nFound type:\n\n    ");
-            text.push_str(&printer.print_type(given));
+            text.push_str(&print_with_expansion(&mut printer, given));
 
             let (main_message_location, main_message_text, extra_labels) = match situation {
                 // When the mismatch error comes from a case clause we want to highlight the
@@ -5019,6 +5019,40 @@ fn hint_alternative_operator(op: &BinOp, given: &Type) -> Option<String> {
         | BinOp::DivFloat
         | BinOp::RemainderInt
         | BinOp::Concatenate => None,
+    }
+}
+
+/// Renders a type for a type-mismatch diagnostic, showing the underlying
+/// structure when an alias would otherwise hide it.
+///
+/// If the type contains a `Type::Alias` anywhere in its structure, both the
+/// alias-preserving form and the expanded form are shown, e.g.
+/// `Pair(a) (i.e. #(a, a))`. Otherwise only the regular form is shown.
+fn print_with_expansion(printer: &mut Printer<'_>, type_: &Arc<Type>) -> String {
+    if !contains_alias(type_) {
+        return printer.print_type(type_).into();
+    }
+    let aliased = printer.print_type(type_);
+    let expanded = printer.print_type_without_aliases(type_);
+    if aliased == expanded {
+        aliased.into()
+    } else {
+        format!("{aliased} (i.e. {expanded})")
+    }
+}
+
+fn contains_alias(type_: &Type) -> bool {
+    match type_ {
+        Type::Alias { .. } => true,
+        Type::Named { arguments, .. } => arguments.iter().any(|a| contains_alias(a)),
+        Type::Tuple { elements } => elements.iter().any(|e| contains_alias(e)),
+        Type::Fn { arguments, return_ } => {
+            contains_alias(return_) || arguments.iter().any(|a| contains_alias(a))
+        }
+        Type::Var { type_ } => match &*type_.borrow() {
+            crate::type_::TypeVar::Link { type_ } => contains_alias(type_.as_ref()),
+            _ => false,
+        },
     }
 }
 

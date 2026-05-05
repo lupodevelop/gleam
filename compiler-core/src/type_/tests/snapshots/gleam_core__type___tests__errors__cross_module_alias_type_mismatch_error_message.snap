@@ -1,7 +1,6 @@
 ---
 source: compiler-core/src/type_/tests/errors.rs
 expression: "\nimport wibble.{type MyAlias}\n\npub fn bad() -> MyAlias {\n  \"hello\"\n}"
-snapshot_kind: text
 ---
 ----- SOURCE CODE
 -- wibble.gleam
@@ -27,7 +26,7 @@ annotation of this function.
 
 Expected type:
 
-    MyAlias
+    MyAlias (i.e. Int)
 
 Found type:
 

@@ -20,7 +20,7 @@ error: Type mismatch
 
 Expected type:
 
-    MyAlias
+    MyAlias (i.e. Int)
 
 Found type:
 
