@@ -13,5 +13,5 @@ fn append(x: String, y: String) -> String {
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.String
+String
 ```

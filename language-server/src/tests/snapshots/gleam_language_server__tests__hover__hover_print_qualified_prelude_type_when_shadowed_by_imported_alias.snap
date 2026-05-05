@@ -10,5 +10,5 @@ const value = True
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Bool
+Bool
 ```

@@ -13,5 +13,5 @@ fn main(wibble: Wubble) {
 
 ----- Hover content (markdown) -----
 ```gleam
-wobble.Wibble
+Wubble
 ```

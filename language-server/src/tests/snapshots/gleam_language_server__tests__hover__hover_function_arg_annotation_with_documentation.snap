@@ -17,7 +17,7 @@ fn identity(x: Wibble) -> Wibble {
 
 ----- Hover content (markdown) -----
 ```gleam
-app.Wibble
+Wibble
 ```
  Exciting documentation
  Maybe even multiple lines

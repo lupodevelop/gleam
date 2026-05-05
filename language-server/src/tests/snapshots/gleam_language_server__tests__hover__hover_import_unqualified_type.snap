@@ -12,7 +12,7 @@ fn main() -> MyType {
 
 ----- Hover content (markdown) -----
 ```gleam
-example_module.MyType
+MyType
 ```
  Exciting documentation
  Maybe even multiple lines

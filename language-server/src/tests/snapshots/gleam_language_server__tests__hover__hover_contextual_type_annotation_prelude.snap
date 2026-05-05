@@ -11,5 +11,5 @@ fn add_one(a: Int) -> Int {
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Int
+Int
 ```

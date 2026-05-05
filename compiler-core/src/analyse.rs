@@ -1486,9 +1486,13 @@ impl<'a, A> ModuleAnalyzer<'a, A> {
             hydrator.disallow_new_type_variables();
             let type_ = hydrator.type_from_ast(resolved_type, environment, &mut self.problems)?;
 
-            environment
-                .names
-                .type_in_scope(name.clone(), type_.as_ref(), &parameters);
+            // Record the alias's own (module, name) so the printer can
+            // render `Type::Alias` references unqualified within the
+            // declaring module. Note: we do NOT register the underlying
+            // type's coordinates as the alias name (the way an unqualified
+            // import would); since aliases now flow through inference as
+            // `Type::Alias`, their identity is preserved without rewriting
+            // the underlying type's display.
             environment
                 .names
                 .alias_in_scope(self.module_name.clone(), name.clone());

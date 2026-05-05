@@ -11,5 +11,5 @@ const value = wobble.Wobble
 
 ----- Hover content (markdown) -----
 ```gleam
-Local
+wobble.Wibble
 ```

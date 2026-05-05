@@ -11,5 +11,5 @@ type Wibble {
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.String
+String
 ```

@@ -8,5 +8,5 @@ type Wibble = Int
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Int
+Int
 ```

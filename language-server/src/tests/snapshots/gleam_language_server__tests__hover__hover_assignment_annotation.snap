@@ -12,5 +12,5 @@ fn wibble() {
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Int
+Int
 ```

@@ -17,5 +17,5 @@ pub fn main() {
 pub type IntAlias = Int
 
 pub fn main() {
-  let value: IntAlias = 20
+  let value: Int = 20
 }

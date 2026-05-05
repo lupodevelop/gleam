@@ -290,20 +290,17 @@ impl Names {
     }
 
     /// Get the name and optional module qualifier for a named type.
+    ///
+    /// `print_mode` only controls how `Type::Alias` is rendered (see
+    /// `Printer::print`); for non-alias named types both modes use the same
+    /// lookup, so prelude and locally imported names print without
+    /// superfluous qualification regardless of mode.
     fn named_type<'a>(
         &'a self,
         module: &'a EcoString,
         name: &'a EcoString,
-        print_mode: PrintMode,
+        _print_mode: PrintMode,
     ) -> NameContextInformation<'a> {
-        if print_mode == PrintMode::ExpandAliases {
-            if let Some((module, _)) = self.imported_modules.get(module) {
-                return NameContextInformation::Qualified(module, name.as_str());
-            };
-
-            return NameContextInformation::Unimported(module, name);
-        }
-
         let key = (module.clone(), name.clone());
 
         // Only check for local aliases if we want to print aliases
@@ -515,6 +512,9 @@ impl<'a> Printer<'a> {
                 ..
             } => {
                 if print_mode == PrintMode::ExpandAliases {
+                    // Recurse with the same mode so an alias chain
+                    // (`B = A; A = Int`) fully expands to the underlying
+                    // type rather than stopping after one hop.
                     self.print(aliased, buffer, print_mode);
                     return;
                 }

@@ -11,5 +11,5 @@ const one: Int = 1
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Int
+Int
 ```

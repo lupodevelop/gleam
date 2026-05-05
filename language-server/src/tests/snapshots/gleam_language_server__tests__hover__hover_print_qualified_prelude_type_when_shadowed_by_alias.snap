@@ -10,5 +10,5 @@ const ok = Ok(10)
 
 ----- Hover content (markdown) -----
 ```gleam
-gleam.Result(Int, a)
+Result(Int, a)
 ```

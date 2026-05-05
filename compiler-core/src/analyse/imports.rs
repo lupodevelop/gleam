@@ -100,12 +100,21 @@ impl<'context, 'problems> Importer<'context, 'problems> {
         };
 
         let type_info = type_info.clone().with_location(import.location);
+        let is_alias = module.type_aliases.contains_key(&import.name);
 
-        self.environment.names.type_in_scope(
-            imported_name.clone(),
-            type_info.type_.as_ref(),
-            &type_info.parameters,
-        );
+        // For non-alias imports we register the underlying type's coords as
+        // the imported display name so unqualified references print without
+        // a prefix. For aliases we skip this: the alias's own identity is
+        // tracked separately via `alias_in_scope` below, and registering the
+        // underlying would overwrite, e.g., the prelude entry for `Int` if
+        // the alias happened to point at `Int`.
+        if !is_alias {
+            self.environment.names.type_in_scope(
+                imported_name.clone(),
+                type_info.type_.as_ref(),
+                &type_info.parameters,
+            );
+        }
 
         self.environment.references.register_type(
             imported_name.clone(),
@@ -135,7 +144,9 @@ impl<'context, 'problems> Importer<'context, 'problems> {
         // mirror it locally so the hydrator wraps references in `Type::Alias`
         // and the printer can show it without a module prefix. Duplicate
         // diagnostics are reported by `insert_type_constructor` above.
-        if let Some(alias) = module.type_aliases.get(&import.name) {
+        if is_alias
+            && let Some(alias) = module.type_aliases.get(&import.name)
+        {
             let alias = alias.clone().with_location(import.location);
             self.environment
                 .names

@@ -10,5 +10,5 @@ const thing: Aliased = 10
 
 ----- Hover content (markdown) -----
 ```gleam
-Aliased
+Int
 ```
